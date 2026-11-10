@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D NET - Lead Management</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
+body{background:#f0f2f5}
+.header{background:#1a73e8;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
+.header h1{font-size:20px}
+.header button{background:#fff;color:#1a73e8;border:none;padding:7px 14px;border-radius:20px;font-weight:700;cursor:pointer}
+.login-box{max-width:360px;margin:80px auto;background:#fff;padding:28px;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.1);text-align:center}
+.login-box h2{color:#1a73e8;margin-bottom:6px}
+.login-box p{color:#666;font-size:13px;margin-bottom:18px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;font-size:14px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#1a73e8}
+.btn{background:#1a73e8;color:#fff;border:none;padding:12px;border-radius:8px;width:100%;font-size:15px;font-weight:700;cursor:pointer}
+.btn-green{background:#0f9d58}.btn-orange{background:#f9ab00;color:#000}.btn-purple{background:#7b1fa2}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.container{max-width:1000px;margin:0 auto;padding:14px}
+.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card h3{margin-bottom:12px;color:#222}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.row{grid-template-columns:1fr}}
+.tabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto}
+.tab{padding:9px 16px;border-radius:20px;border:1px solid #ddd;background:#fff;cursor:pointer;white-space:nowrap;font-size:13px}
+.tab.active{background:#1a73e8;color:#fff;border-color:#1a73e8}
+.lead{border:1px solid #eee;border-radius:10px;padding:12px;margin-bottom:10px;background:#fff}
+.lead b{font-size:15px}
+.lead small{color:#666}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;margin-top:6px}
+.New{background:#e8f0fe;color:#1a73e8}.Feasibility-Pending{background:#fef7e0;color:#f9ab00}.Feasibility-Done{background:#e8f0fe;color:#1a73e8}.Cabling-Pending{background:#fff3cd;color:#7a5b00}.Cabling-Done{background:#e6f4ea;color:#0f9d58}.Order-Pending{background:#fff3cd;color:#7a5b00}.Order-Completed{background:#d4edda;color:#155724}.Modem-Pending{background:#f3e5f5;color:#7b1fa2}.Completed{background:#e6f4ea;color:#0f9d58}.Rejected{background:#fce8e6;color:#d93025}
+.flex{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.flex button{flex:1;padding:9px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:13px;min-width:110px}
+.edit{background:#e8f0fe;color:#1a73e8}.del{background:#fce8e6;color:#d93025}
+#msg{text-align:center;font-size:13px;color:#0f9d58;margin-top:8px}
+.hidden{display:none}
+.top-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.top-info span{font-size:12px;color:#666}
+#sessionTimer{font-size:12px;color:#fff;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px}
+.orderBox{border:2px solid #f9ab00 !important;background:#fffbe6}
+.modemBox{border:2px solid #7b1fa2 !important;background:#fdf2ff}
+.checkrow{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px;font-weight:600}
+.checkrow input{width:20px;height:20px;margin:0}
+label.lbl{font-size:12px;font-weight:700;color:#555}
+.assignBox{background:#fffbe6;border:1px solid #f9ab00;padding:10px;border-radius:8px;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="loginPage" class="login-box">
+<h2>D NET</h2><p>Lead Management System</p>
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password">
+<button class="btn" onclick="login()">Login</button>
+<p style="margin-top:14px;font-size:12px;color:#888">admin / shijo / gopan / anathu / vinu<br>Password: 1234</p>
+<p id="loginErr" style="color:red;font-size:13px"></p>
+</div>
+<div id="appPage" class="hidden">
+<div class="header"><div><h1>D NET Leads</h1><span id="sessionTimer"></span></div><div style="display:flex;gap:8px;align-items:center"><span id="userLabel" style="font-size:13px"></span><button onclick="logout()">Logout</button></div></div>
+<div class="container">
+<div class="top-info"><span id="leadCount">Loading...</span><button onclick="loadLeads(true)" style="padding:6px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;cursor:pointer">↻ Refresh</button></div>
+<div id="newLeadCard" class="card hidden">
+<h3 id="formTitle">+ New Lead - Admin Only</h3>
+<input type="hidden" id="editRow">
+<div class="row"><input id="fName" placeholder="Name *"><input id="fPhone" placeholder="Phone *" type="tel"></div>
+<div class="row"><input id="fPlace" placeholder="Place *"><input id="fLandmark" placeholder="Landmark"></div>
+<div class="row"><input id="fRemark" placeholder="Remark"></div>
+<button class="btn btn-green" id="saveBtn" onclick="saveLead()">Save Lead</button>
+<button class="btn" style="background:#eee;color:#333;margin-top:8px" onclick="clearForm()">Clear</button>
+<p id="msg"></p>
+</div>
+<div id="orderSection" class="card orderBox hidden"><h3>🟡 Order Entry - Admin Only (Cabling Done)</h3><div id="orderList"></div></div>
+<div id="modemSection" class="card modemBox hidden"><h3>🟣 Modem Config - Vinu Only</h3><div id="modemList"></div></div>
+<div class="tabs" id="tabs"><div class="tab active" onclick="filterTab('All',this)">My Work</div><div class="tab" onclick="filterTab('Completed',this)">Completed Orders</div></div>
+<input id="searchBox" placeholder="🔍 Search Name / Phone / Place..." oninput="renderLeads()">
+<div id="leadList" style="margin-top:12px"></div>
+</div>
+</div>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbwzg0Xt-W5dDnh8592C8scFRHhKRCHdr8fvQiTViQxQzD3fjDNK91lT6EpKV6_emRLM/exec";
+const SESSION_MIN = 30;
+let allLeads = [];
+let currentFilter = 'All';
+let currentUser = '';
+let currentRole = '';
+let isLoading = false;
+const USERS = {
+  admin:{pass:'1234',role:'admin',name:'Admin'},
+  shijo:{pass:'1234',role:'cabling',name:'Shijo'},
+  gopan:{pass:'1234',role:'cabling',name:'Gopan'},
+  anathu:{pass:'1234',role:'cabling',name:'Anathu'},
+  vinu:{pass:'1234',role:'modem',name:'Vinu'}
+};
+const CABLING_STAFFS = ['Shijo','Gopan','Anathu'];
+const ALL_STAFFS = ['Shijo','Gopan','Anathu','Vinu'];
+const CABLING_TEAM_LABEL = 'Shijo / Gopan / Anathu';
+function getVal(l){
+  var keys = Array.prototype.slice.call(arguments,1);
+  for(var k=0;k<keys.length;k++){ var key=keys[k]; if(l[key]!==undefined && l[key]!==null && l[key]!=='') return l[key]; }
+  return '';
+}
+function fmtDate(d){ if(!d) return ''; var dt=new Date(d); if(isNaN(dt.getTime())) return d; return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+function findLead(row){ for(var i=0;i<allLeads.length;i++){ if(allLeads[i]._row===Number(row)) return allLeads[i]; } return allLeads[Number(row)]; }
+function staffOptions(selected){ var s=''; for(var i=0;i<ALL_STAFFS.length;i++){ s+='<option value="'+ALL_STAFFS[i]+'"'+(ALL_STAFFS[i]===selected?' selected':'')+'>'+ALL_STAFFS[i]+'</option>'; } return s; }
+function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+window.onload=function(){
+  var u=localStorage.getItem('dnet_user'), r=localStorage.getItem('dnet_role'), t=localStorage.getItem('dnet_login_time');
+  if(u&&r&&t&&(Date.now()-Number(t)<SESSION_MIN*60*1000)){ currentUser=u; currentRole=r; showApp(); startTimer(); }
+  else{ localStorage.clear(); document.getElementById('loginPage').classList.remove('hidden'); }
+  document.addEventListener('click',extendSession); document.addEventListener('keypress',extendSession);
+};
+function extendSession(){ var t=localStorage.getItem('dnet_login_time'); if(t&&currentUser) localStorage.setItem('dnet_login_time',Date.now()); }
+function login(){
+  var u=document.getElementById('username').value.trim().toLowerCase();
+  var p=document.getElementById('password').value.trim();
+  if(USERS[u]&&USERS[u].pass===p){ currentUser=u; currentRole=USERS[u].role; localStorage.setItem('dnet_user',u); localStorage.setItem('dnet_role',USERS[u].role); localStorage.setItem('dnet_login_time',Date.now()); showApp(); startTimer(); }
+  else document.getElementById('loginErr').innerText="Wrong username / password!";
+}
+function showApp(){
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('appPage').classList.remove('hidden');
+  document.getElementById('userLabel').innerText = USERS[currentUser].name + " (" + currentRole + ")";
+  document.getElementById('newLeadCard').classList.toggle('hidden', currentRole!=='admin');
+  loadLeads();
+}
+function logout(){ localStorage.clear(); location.reload(); }
+var timerInterval;
+function startTimer(){ clearInterval(timerInterval); timerInterval=setInterval(function(){ var t=Number(localStorage.getItem('dnet_login_time')||0); var left=SESSION_MIN*60*1000-(Date.now()-t); if(left<=0){ alert("Session expired"); logout(); return; } var m=Math.floor(left/60000), s=Math.floor((left%60000)/1000); document.getElementById('sessionTimer').innerText="Session: "+m+":"+(s<10?'0':'')+s; },1000); }
+async function loadLeads(force){
+  if(isLoading && !force) return; isLoading=true;
+  document.getElementById('leadCount').innerText="Loading...";
+  try{
+    var res=await fetch(API_URL+"?t="+Date.now());
+    var txt=await res.text();
+    var data=JSON.parse(txt);
+    if(data && data.data) data=data.data;
+    if(data && data.error) throw new Error(data.error);
+    var seen={}; var arr=[]; var listData = Array.isArray(data)?data:[];
+    for(var i=0;i<listData.length;i++){
+      var l=listData[i];
+      if(l._row===undefined) l._row=i;
+      var n=getVal(l,'Name','name'), p=getVal(l,'Phone','phone'), pl=getVal(l,'Place','place');
+      if(!n&&!p&&!pl) continue;
+      var key=(n+'|'+p+'|'+pl+'|'+getVal(l,'Date','date')).toLowerCase();
+      if(seen[key]) continue; seen[key]=true; arr.push(l);
+    }
+    allLeads=arr; renderLeads(); renderOrderPending(); renderModem();
+  }catch(e){ document.getElementById('leadCount').innerText="Failed to load. - "+e.message; }
+  isLoading=false;
+}
+function filterTab(f,el){ currentFilter=f; var tabs=document.querySelectorAll('.tab'); for(var i=0;i<tabs.length;i++) tabs[i].classList.remove('active'); el.classList.add('active'); renderLeads(); }
+function isAssignedToMe(l){
+  var assigned=getVal(l,'Assigned To','assigned to');
+  if(!assigned) return false;
+  if(assigned==='Admin') return false;
+  if(assigned==='Feasibility Team') return true;
+  if(assigned===CABLING_TEAM_LABEL) return CABLING_STAFFS.indexOf(USERS[currentUser].name)!==-1;
+  if(assigned==='Cabling Team - Shijo / Gopan / Anathu') return CABLING_STAFFS.indexOf(USERS[currentUser].name)!==-1;
+  if(assigned==='Admin - Order Entry') return false;
+  if(assigned==='Completed') return false;
+  return assigned.indexOf(USERS[currentUser].name)!==-1;
+}
+function myLeads(){
+  var out=[];
+  for(var i=0;i<allLeads.length;i++){
+    var l=allLeads[i]; var st=getVal(l,'Status','status')||'New';
+    if(currentRole==='admin'){ if(currentFilter==='Completed'){ if(st==='Completed') out.push(l); } else { if(st!=='Completed') out.push(l); } }
+    else if(currentRole==='cabling'){ if(currentFilter!=='Completed' && (st==='Feasibility Pending' || st==='Feasibility Done') && isAssignedToMe(l)) out.push(l); }
+    else if(currentRole==='modem'){ if(currentFilter==='Completed'){ if(st==='Completed') out.push(l); } else { if((st==='Feasibility Pending' && isAssignedToMe(l)) || st==='Order Completed' || st==='Modem Pending') out.push(l); } }
+  }
+  return out;
+}
+function renderLeads(){
+  var q=document.getElementById('searchBox').value.toLowerCase();
+  var all=myLeads(); var list=[];
+  for(var i=0;i<all.length;i++){ if(!q || JSON.stringify(all[i]).toLowerCase().indexOf(q)!==-1) list.push(all[i]); }
+  document.getElementById('leadCount').innerText=list.length+" Leads";
+  var html=""; var rev=list.slice().reverse();
+  for(var j=0;j<rev.length;j++){
+    var l=rev[j]; var idx=l._row;
+    var name=getVal(l,'Name','name')||'No Name', phone=getVal(l,'Phone','phone'), place=getVal(l,'Place','place'), lm=getVal(l,'Landmark','landmark');
+    var status=getVal(l,'Status','status')||'New';
+    var assigned=getVal(l,'Assigned To','assigned to')||'-';
+    var feas=getVal(l,'Feas Staff','feas staff')||'-', len=getVal(l,'Length','length')||'-', poles=getVal(l,'Poles','poles')||'-', route=getVal(l,'Route','route')||'-';
+    var cable=getVal(l,'Cable Used','cable used')||'-', cabBy=getVal(l,'Cabling By','cabling by')||'-';
+    var ftth=getVal(l,'FTTH Number','ftth number'), plan=getVal(l,'Plan','plan'), uname=getVal(l,'Username','username');
+    var sticker=getVal(l,'Sticker','sticker'); var remark=getVal(l,'Remark','remark')||'-';
+    var detail='<br><small>Feas: '+feas+' | Length: '+len+'m | Poles: '+poles+' | Route: '+route+'</small><br><small>Cabling: '+cabBy+' | Cable Used: '+cable+'</small><br><small>Remark: '+remark+'</small>';
+    if(ftth||uname) detail+='<br><small style="color:#155724">📡 FTTH: '+(ftth||'-')+' | Plan: '+(plan||'-')+' | User: '+(uname||'-')+'</small>';
+    if(sticker) detail+='<br><small>🏷️ Sticker: '+sticker+'</small>';
+    var btns='';
+    if(currentRole==='admin' && status==='New'){
+      btns='<div class="assignBox"><label class="lbl">👤 Ee lead aarkku kodukkam? Select cheyyu:</label><select id="assign_'+idx+'">'+staffOptions('Shijo')+'</select><div class="flex"><button class="btn-orange" style="background:#f9ab00" onclick="forwardToFeas('+idx+')">Forward ➡️</button><button class="edit" onclick="editLead('+idx+')">Edit</button><button class="del" onclick="deleteLead('+idx+')">Delete</button></div></div>';
+    }
+    if(currentRole==='admin' && status==='Feasibility Pending'){
+      btns='<div class="assignBox"><label class="lbl">👤 Re-Forward - aarkku kodukkam?</label><select id="assign_'+idx+'">'+staffOptions(assigned)+'</select><div class="flex"><button class="btn-orange" style="background:#f9ab00" onclick="forwardToFeas('+idx+')">Re-Forward ➡️</button><button class="edit" onclick="editLead('+idx+')">Edit</button></div></div>';
+    }
+    if((currentRole==='cabling' || currentRole==='modem') && status==='Feasibility Pending' && isAssignedToMe(l)){
+      btns='<div class="flex"><button class="btn-green" style="background:#0f9d58;color:#fff" onclick="openFeasForm('+idx+')">Feasibility Details ✏️</button></div>';
+    }
+    if(currentRole==='cabling' && status==='Feasibility Done' && isAssignedToMe(l)){
+      btns='<div class="flex"><button class="btn-green" style="background:#0f9d58;color:#fff" onclick="openCablingForm('+idx+')">Cabling Close ✏️</button></div>';
+    }
+    if(currentRole==='admin' && status==='Cabling Done'){
+      btns='<div class="flex"><button class="btn-orange" style="background:#f9ab00" onclick="document.getElementById(\'orderSection\').scrollIntoView({behavior:\'smooth\'})">Order Entry Below ⬇️</button></div>';
+    }
+    var formHtml='';
+    if(l._showFeas){
+      formHtml='<div style="margin-top:10px;background:#fef7e0;padding:10px;border-radius:8px"><label class="lbl">Length (m)</label><input id="len_'+idx+'" value="'+(len==='-'?'':len)+'" type="number" placeholder="Length"><label class="lbl">Poles</label><input id="pole_'+idx+'" value="'+(poles==='-'?'':poles)+'" type="number" placeholder="Poles"><label class="lbl">Route</label><select id="route_'+idx+'"><option value="Existing Cable Route">Existing Cable Route</option><option value="New Route">New Route</option></select><label class="lbl">Feas Remarks</label><input id="frem_'+idx+'" value="'+getVal(l,'Feas Remark','feas remark')+'" placeholder="Remarks"><button class="btn btn-green" onclick="submitFeas('+idx+')">Feasibility Complete ✅ - Cabling Team-il Ottu</button></div>';
+    }
+    if(l._showCabling){
+      formHtml='<div style="margin-top:10px;background:#e6f4ea;padding:10px;border-radius:8px"><label class="lbl">Cable Used (m / Details)</label><input id="cable_'+idx+'" placeholder="Eg: 120m - Cable used"><label class="lbl">Cabling Remarks</label><input id="crem_'+idx+'" placeholder="Remarks"><button class="btn btn-green" onclick="submitCabling('+idx+')">Close Cabling ✅</button></div>';
+    }
+    html+='<div class="lead"><div style="display:flex;justify-content:space-between"><b>'+name+'</b><small>'+fmtDate(getVal(l,'Date','date'))+'</small></div><small>📞 '+phone+' • 📍 '+place+' '+(lm?'- '+lm:'')+'</small>'+detail+'<br><span class="badge '+status.replace(/ /g,'-')+'">'+status+'</span><br><small style="color:#b45309;font-weight:700">👤 Assigned To: '+assigned+'</small>'+btns+formHtml+'</div>';
+  }
+  document.getElementById('leadList').innerHTML=html||"<p style='text-align:center;color:#888'>No leads in your list - Assigned leads mathram kanum</p>";
+}
+function openFeasForm(idx){ var l=findLead(idx); if(l) l._showFeas=true; renderLeads(); }
+function openCablingForm(idx){ var l=findLead(idx); if(l) l._showCabling=true; renderLeads(); }
+async function forwardToFeas(idx){
+  var l=findLead(idx); if(!l) return;
+  var selected=document.getElementById('assign_'+idx).value;
+  await updateLead(idx,Object.assign({},leadToPayload(l),{Status:'Feasibility Pending','Assigned To':selected}));
+  await sleep(1000);
+  alert('Forwarded to '+selected+' ✅'); loadLeads(true);
+}
+async function submitFeas(idx){
+  var l=findLead(idx);
+  var len=document.getElementById('len_'+idx).value, poles=document.getElementById('pole_'+idx).value, route=document.getElementById('route_'+idx).value, rem=document.getElementById('frem_'+idx).value;
+  if(!len){ alert('Length venda!'); return; }
+  await updateLead(idx,Object.assign({},leadToPayload(l),{Status:'Feasibility Done','Feas Staff':USERS[currentUser].name,Length:len,Poles:poles,Route:route,'Feas Remark':rem,Remark:rem,'Assigned To':CABLING_TEAM_LABEL}));
+  await sleep(1000);
+  alert('Feasibility Done ✅ - Shijo, Gopan, Anathu ellarkkum poyi'); loadLeads(true);
+}
+async function submitCabling(idx){
+  var l=findLead(idx);
+  var cable=document.getElementById('cable_'+idx).value, rem=document.getElementById('crem_'+idx).value;
+  if(!cable){ alert('Cable Used venda!'); return; }
+  await updateLead(idx,Object.assign({},leadToPayload(l),{Status:'Cabling Done','Cabling By':USERS[currentUser].name,'Cable Used':cable,Remark:rem,'Assigned To':'Admin - Order Entry'}));
+  await sleep(1000);
+  alert('Cabling Completed ✅'); loadLeads(true);
+}
+function leadToPayload(l){
+  return { Date:getVal(l,'Date','date'), Name:getVal(l,'Name','name'), Phone:getVal(l,'Phone','phone'), Place:getVal(l,'Place','place'), Landmark:getVal(l,'Landmark','landmark'), 'Feas Staff':getVal(l,'Feas Staff','feas staff'), Status:getVal(l,'Status','status'), 'Cabling By':getVal(l,'Cabling By','cabling by'), Length:getVal(l,'Length','length'), Poles:getVal(l,'Poles','poles'), Remark:getVal(l,'Remark','remark'), 'FTTH Number':getVal(l,'FTTH Number','ftth number'), Plan:getVal(l,'Plan','plan'), Username:getVal(l,'Username','username'), 'Route':getVal(l,'Route','route'), 'Cable Used':getVal(l,'Cable Used','cable used'), 'Sticker':getVal(l,'Sticker','sticker'), 'Assigned To':getVal(l,'Assigned To','assigned to'), 'Feas Remark':getVal(l,'Feas Remark','feas remark') };
+}
+async function updateLead(idx,payload){
+  await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:'update',rowIndex:idx},payload))});
+}
+function editLead(idx){
+  var l=findLead(idx); if(!l) return;
+  document.getElementById('editRow').value=idx;
+  document.getElementById('fName').value=getVal(l,'Name','name');
+  document.getElementById('fPhone').value=getVal(l,'Phone','phone');
+  document.getElementById('fPlace').value=getVal(l,'Place','place');
+  document.getElementById('fLandmark').value=getVal(l,'Landmark','landmark');
+  document.getElementById('fRemark').value=getVal(l,'Remark','remark');
+  document.getElementById('formTitle').innerText="Edit Lead - "+getVal(l,'Status','status');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function clearForm(){ document.getElementById('editRow').value=''; var ids=['fName','fPhone','fPlace','fLandmark','fRemark']; for(var i=0;i<ids.length;i++) document.getElementById(ids[i]).value=''; document.getElementById('formTitle').innerText='+ New Lead'; }
+async function saveLead(){
+  var btn=document.getElementById('saveBtn'); if(btn.disabled) return;
+  var name=document.getElementById('fName').value.trim(), phone=document.getElementById('fPhone').value.trim();
+  if(!name||!phone){ alert("Name & Phone venda!"); return; }
+  btn.disabled=true; btn.innerText="Saving...";
+  var editVal=document.getElementById('editRow').value;
+  var isEdit=editVal!=='';
+  var oldLead=isEdit?findLead(editVal):null;
+  var oldStatus=oldLead?getVal(oldLead,'Status','status'):'New';
+  var oldAssigned=oldLead?getVal(oldLead,'Assigned To','assigned to'):'Admin';
+  var payload={ action:isEdit?'update':'add', rowIndex:editVal, Date:isEdit?getVal(oldLead,'Date','date'):new Date().toLocaleString('en-IN'), Name:name, Phone:phone, Place:document.getElementById('fPlace').value, Landmark:document.getElementById('fLandmark').value, Remark:document.getElementById('fRemark').value, Status:oldStatus, 'Assigned To':oldAssigned };
+  if(isEdit && oldLead){ payload=Object.assign({},leadToPayload(oldLead),payload); }
+  document.getElementById('msg').innerText="Saving...";
+  try{ await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); document.getElementById('msg').innerText="Saved! ✅"; clearForm(); await sleep(1000); loadLeads(true); setTimeout(function(){document.getElementById('msg').innerText='';},800); }catch(e){ document.getElementById('msg').innerText="Save failed!"; }
+  btn.disabled=false; btn.innerText="Save Lead";
+}
+async function deleteLead(idx){ if(!confirm("Delete cheyyano?")) return; await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',rowIndex:idx})}); await sleep(800); loadLeads(true); }
+function renderOrderPending(){
+  var box=document.getElementById('orderList');
+  if(currentRole!=='admin'){ document.getElementById('orderSection').classList.add('hidden'); return; }
+  var list=[]; for(var i=0;i<allLeads.length;i++){ if(getVal(allLeads[i],'Status','status')==='Cabling Done') list.push(allLeads[i]); }
+  if(!list.length){ document.getElementById('orderSection').classList.add('hidden'); return; }
+  document.getElementById('orderSection').classList.remove('hidden');
+  var h=''; var rev=list.slice().reverse();
+  for(var j=0;j<rev.length;j++){ var l=rev[j]; var idx=l._row; h+='<div class="lead" style="border:1px solid #f9ab00"><b>'+getVal(l,'Name','name')+'</b> - '+getVal(l,'Phone','phone')+'<br><small>'+getVal(l,'Place','place')+' | Cabling: '+getVal(l,'Cabling By','cabling by')+' | Cable: '+getVal(l,'Cable Used','cable used')+'</small><br><label class="lbl">FTTH Number</label><input id="ftth_'+idx+'" value="'+getVal(l,'FTTH Number','ftth number')+'" placeholder="FTTH Number"><label class="lbl">Plan</label><select id="plan_'+idx+'"><option value="499">499 - 100 Mbps</option><option value="799">799 - 200 Mbps</option><option value="999">999 - 300 Mbps</option><option value="1499">1499 - 500 Mbps</option><option value="Other">Other</option></select><label class="lbl">Username</label><input id="user_'+idx+'" value="'+getVal(l,'Username','username')+'" placeholder="Username"><label class="lbl">Order Remarks</label><input id="orem_'+idx+'" placeholder="Plan details / Remarks"><button class="btn btn-green" onclick="submitOrder('+idx+')">Order Complete ➡️ Forward to Vinu (Modem)</button></div>'; }
+  box.innerHTML=h;
+}
+async function submitOrder(idx){
+  var l=findLead(idx);
+  var ftth=document.getElementById('ftth_'+idx).value.trim(), plan=document.getElementById('plan_'+idx).value, uname=document.getElementById('user_'+idx).value.trim(), orem=document.getElementById('orem_'+idx).value;
+  if(!ftth||!uname){ alert('FTTH + Username venam'); return; }
+  await updateLead(idx,Object.assign({},leadToPayload(l),{Status:'Order Completed','FTTH Number':ftth,Plan:plan,Username:uname,Remark:orem,'Assigned To':'Vinu'}));
+  await sleep(1000);
+  alert('Order Completed ✅ - Vinu-vinu poyi'); loadLeads(true);
+}
+function renderModem(){
+  var box=document.getElementById('modemList');
+  if(currentRole!=='modem'){ document.getElementById('modemSection').classList.add('hidden'); return; }
+  var list=[]; for(var i=0;i<allLeads.length;i++){ var s=getVal(allLeads[i],'Status','status'); if(s==='Order Completed'||s==='Modem Pending') list.push(allLeads[i]); }
+  if(!list.length){ document.getElementById('modemSection').classList.add('hidden'); return; }
+  document.getElementById('modemSection').classList.remove('hidden');
+  var h=''; var rev=list.slice().reverse();
+  for(var j=0;j<rev.length;j++){ var l=rev[j]; var idx=l._row; h+='<div class="lead" style="border:1px solid #7b1fa2"><b>'+getVal(l,'Name','name')+'</b> - '+getVal(l,'Phone','phone')+'<br><small>FTTH: '+getVal(l,'FTTH Number','ftth number')+' | Plan: '+getVal(l,'Plan','plan')+' | User: '+getVal(l,'Username','username')+'</small><br><label class="lbl">Modem Remarks</label><input id="mrem_'+idx+'" placeholder="Modem config remarks"><div class="checkrow"><input type="checkbox" id="sticker_'+idx+'"> <span>🏷️ Sticker Provided on Modem?</span></div><button class="btn btn-purple" style="background:#7b1fa2" onclick="submitModem('+idx+')">Modem Done - Close Lead ✅</button></div>'; }
+  box.innerHTML=h;
+}
+async function submitModem(idx){
+  var l=findLead(idx);
+  var mrem=document.getElementById('mrem_'+idx).value;
+  var sticker=document.getElementById('sticker_'+idx).checked ? 'Yes - Sticker Provided' : 'No - Sticker NOT Provided';
+  await updateLead(idx,Object.assign({},leadToPayload(l),{Status:'Completed',Sticker:sticker,Remark:mrem,'Assigned To':'Completed'}));
+  await sleep(1000);
+  alert('Lead Closed ✅ - Completed Orders-il poyi'); loadLeads(true);
+}
+</script>
+</body>
+</html>
